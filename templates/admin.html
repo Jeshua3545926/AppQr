@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Admin</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="container">
+        <section class="card hero-card header">
+            <div>
+                <span class="eyebrow">Dashboard</span>
+                <h1>Panel de Administración</h1>
+                <p class="lead">Admin: {{ session.get("admin_username") }}. Gestiona empleados, consulta registros y descarga los QR con una vista más limpia.</p>
+            </div>
+            <div class="actions">
+                <a class="btn" href="/scanner">Abrir escáner</a>
+                <a class="btn secondary" href="/admin/settings">Configuración</a>
+                <a class="btn secondary" href="/descargar-qrs">Descargar PDF de QR</a>
+                <a class="btn danger" href="/logout">Cerrar sesión</a>
+            </div>
+        </section>
+
+        {% if error %}
+        <section class="card error-card">
+            <p>{{ error }}</p>
+        </section>
+        {% endif %}
+        {% if success %}
+        <section class="card success-card">
+            <p>{{ success }}</p>
+        </section>
+        {% endif %}
+
+        <section class="grid">
+            <div class="card">
+                <div class="section-heading">
+                    <div>
+                        <h2>Locales y QR imprimibles</h2>
+                        <p class="helper-text">Descarga o imprime los códigos listos para colocar en cada punto.</p>
+                    </div>
+                </div>
+                <div class="qr-list">
+                    {% for l in locales %}
+                    <div class="qr-card">
+                        <strong>{{ l.nombre }}</strong>
+                        <img src="/static/qrcodes/local_{{ l.id }}.png" alt="QR {{ l.nombre }}">
+                        <a class="small-link" href="/static/qrcodes/local_{{ l.id }}.png" download>Descargar PNG</a>
+                        <span class="token">Token: {{ l.qr_token }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card side-card compact-card">
+                <div class="section-heading">
+                    <div>
+                        <h2>Crear empleado</h2>
+                        <p class="helper-text">Agrega nuevos usuarios para el escaneo sin salir del panel.</p>
+                    </div>
+                </div>
+                <form method="POST" class="stack-form">
+                    <input type="hidden" name="action" value="create_employee">
+                    <label>Nombre del empleado</label>
+                    <input type="text" name="nombre_empleado" placeholder="Ej. Juan Pérez" required>
+                    <button class="btn" type="submit">Crear cuenta</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="section-heading">
+                <div>
+                    <h2>Historial reciente</h2>
+                    <p class="helper-text">Los registros se refrescan automáticamente para mantener el monitoreo en vivo.</p>
+                </div>
+            </div>
+            <table id="tablaRegistros">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Empleado</th>
+                        <th>Local</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in registros %}
+                    <tr>
+                        <td>{{ r.id }}</td>
+                        <td>{{ r.empleado }}</td>
+                        <td>{{ r.local }}</td>
+                        <td>{{ r.fecha }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="/static/admin.js"></script>
+</body>
+</html>

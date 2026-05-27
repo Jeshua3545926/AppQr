@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inicio de sesión</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="login-container">
+        <section class="card login-card hero-card">
+            <span class="eyebrow">Control De Acceso</span>
+            <h1>Inicio de sesión</h1>
+            <p class="lead">Selecciona el rol y entra al panel o al flujo de escaneo con una interfaz más clara y elegante.</p>
+
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" class="stack-form">
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="login_type" value="admin" checked>
+                        Administrador
+                    </label>
+                    <label>
+                        <input type="radio" name="login_type" value="user">
+                        Empleado
+                    </label>
+                </div>
+
+                <div id="adminFields">
+                    <label>Usuario</label>
+                    <input type="text" name="username" autocomplete="username">
+
+                    <label>Contraseña</label>
+                    <input type="password" name="password" autocomplete="current-password">
+                </div>
+
+                <div id="userFields" class="hidden">
+                    <label>Empleado</label>
+                    <select name="empleado_id">
+                        <option value="">Selecciona un empleado</option>
+                        {% for e in empleados %}
+                        <option value="{{ e.id }}">{{ e.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button class="btn" type="submit">Iniciar sesión</button>
+            </form>
+
+            <div class="info-strip">
+                <div>
+                    <strong>Acceso demo</strong>
+                    <p class="helper-text">Admin: `admin` / `admin123`</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const adminFields = document.getElementById("adminFields");
+        const userFields = document.getElementById("userFields");
+        const loginRadios = document.querySelectorAll("input[name='login_type']");
+
+        function updateLoginFields() {
+            const selected = document.querySelector("input[name='login_type']:checked").value;
+            adminFields.classList.toggle("hidden", selected !== "admin");
+            userFields.classList.toggle("hidden", selected !== "user");
+        }
+
+        loginRadios.forEach(radio => radio.addEventListener("change", updateLoginFields));
+        updateLoginFields();
+    </script>
+</body>
+</html>

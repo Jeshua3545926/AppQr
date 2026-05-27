@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Escáner QR</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="container">
+        <section class="card hero-card">
+            <span class="eyebrow">Scanner</span>
+            <h1>Escáner QR con cámara</h1>
+            <p class="lead">Escanea el QR colocado en el local para registrar la llegada o recolección con respuesta inmediata.</p>
+
+            {% if role == "user" %}
+            <div class="session-info">
+                <p>Empleado en sesión: <strong>{{ selected_user_name }}</strong></p>
+                <a class="btn secondary" href="/logout">Cerrar sesión</a>
+            </div>
+            <input type="hidden" id="empleadoId" value="{{ selected_user_id }}">
+            {% else %}
+            <a class="btn secondary" href="/login">Login usuario</a>
+            <label>Empleado</label>
+            <select id="empleadoId">
+                {% for e in empleados %}
+                <option value="{{ e.id }}">{{ e.nombre }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+
+            <div id="reader"></div>
+            <div id="resultado" class="alert hidden"></div>
+
+            <div class="inline-actions">
+                <a class="btn secondary" href="/login">Login admin</a>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="/static/scanner.js"></script>
+</body>
+</html>
