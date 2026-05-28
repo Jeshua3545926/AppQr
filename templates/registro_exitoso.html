@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Registro Exitoso{% endblock %}
+
+{% block content %}
+        <section class="card hero-card">
+            <span class="eyebrow">Éxito</span>
+            <h1>✅ Registro completado</h1>
+            <p class="helper-text">Tu registro ha sido guardado correctamente</p>
+            <h2>{{ mensaje }}</h2>
+            <div style="font-size: 0.9rem; color: var(--muted); margin: 8px 0;">
+                📅 {{ fecha }}
+            </div>
+            {% if correo_enviado %}
+            <div style="color: var(--success); margin: 8px 0;">
+                📧 Notificación enviada por correo
+            </div>
+            {% endif %}
+            <div class="inline-actions">
+                <a class="btn secondary" href="/scanner">Escanear otro QR</a>
+            </div>
+        </section>
+{% endblock %}

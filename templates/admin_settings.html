@@ -1,21 +1,13 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Configuración Admin</title>
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-    <main class="container">
+{% extends "base.html" %}
+
+{% block title %}Configuración Admin{% endblock %}
+
+{% block content %}
         <section class="card hero-card header">
             <div>
                 <span class="eyebrow">Settings</span>
                 <h1>Configuración de Administrador</h1>
-                <p class="lead">Admin: {{ session.get("admin_username") }}. Personaliza la cuenta, el correo de destino y el SMTP desde un solo lugar.</p>
-            </div>
-            <div class="actions">
-                <a class="btn" href="/admin">Volver al panel</a>
-                <a class="btn danger" href="/logout">Cerrar sesión</a>
+                <p class="lead">Admin: {{ session.get("username") }}. Personaliza la cuenta, el correo de destino y el SMTP desde un solo lugar.</p>
             </div>
         </section>
 
@@ -111,6 +103,4 @@
                 </div>
             </form>
         </section>
-    </main>
-</body>
-</html>
+{% endblock %}

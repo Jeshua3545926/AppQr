@@ -1,4 +1,5 @@
 flask
+pyjwt
 qrcode[pil]
 reportlab
 gunicorn

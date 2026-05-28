@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Inicio de sesión</title>
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-    <main class="login-container">
+{% extends "base.html" %}
+
+{% block title %}Inicio de sesión{% endblock %}
+
+{% block content %}
         <section class="card login-card hero-card">
             <span class="eyebrow">Control De Acceso</span>
             <h1>Inicio de sesión</h1>
@@ -56,7 +52,6 @@
                 </div>
             </div>
         </section>
-    </main>
 
     <script>
         const adminFields = document.getElementById("adminFields");
@@ -72,5 +67,4 @@
         loginRadios.forEach(radio => radio.addEventListener("change", updateLoginFields));
         updateLoginFields();
     </script>
-</body>
-</html>
+{% endblock %}

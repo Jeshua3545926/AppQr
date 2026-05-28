@@ -1,23 +1,13 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Panel Admin</title>
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-    <main class="container">
+{% extends "base.html" %}
+
+{% block title %}Panel Admin{% endblock %}
+
+{% block content %}
         <section class="card hero-card header">
             <div>
                 <span class="eyebrow">Dashboard</span>
                 <h1>Panel de Administración</h1>
-                <p class="lead">Admin: {{ session.get("admin_username") }}. Gestiona empleados, consulta registros y descarga los QR con una vista más limpia.</p>
-            </div>
-            <div class="actions">
-                <a class="btn" href="/scanner">Abrir escáner</a>
-                <a class="btn secondary" href="/admin/settings">Configuración</a>
-                <a class="btn secondary" href="/descargar-qrs">Descargar PDF de QR</a>
-                <a class="btn danger" href="/logout">Cerrar sesión</a>
+                <p class="lead">Admin: {{ session.get("username") }}. Gestiona empleados, consulta registros y descarga los QR con una vista más limpia.</p>
             </div>
         </section>
 
@@ -36,18 +26,34 @@
             <div class="card">
                 <div class="section-heading">
                     <div>
-                        <h2>Locales y QR imprimibles</h2>
-                        <p class="helper-text">Descarga o imprime los códigos listos para colocar en cada punto.</p>
+                        <h2>QRs Generados</h2>
+                        <p class="helper-text">Descarga o imprime los códigos QR personalizados generados.</p>
                     </div>
                 </div>
                 <div class="qr-list">
-                    {% for l in locales %}
-                    <div class="qr-card">
-                        <strong>{{ l.nombre }}</strong>
-                        <img src="/static/qrcodes/local_{{ l.id }}.png" alt="QR {{ l.nombre }}">
-                        <a class="small-link" href="/static/qrcodes/local_{{ l.id }}.png" download>Descargar PNG</a>
-                        <span class="token">Token: {{ l.qr_token }}</span>
+                    {% for qr in qrs_generados %}
+                    <div class="qr-card" data-qr-id="{{ qr.id }}">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px;">
+                            <strong>{{ qr.nombre_local }} - {{ qr.nombre_empleado }}</strong>
+                            <button class="delete-btn" onclick="hideQR({{ qr.id }})" title="Ocultar del dashboard">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <img src="/static/qrcodes/qr_generado_{{ qr.id }}.png" alt="QR {{ qr.nombre_local }}">
+                        <a class="small-link" href="/static/qrcodes/qr_generado_{{ qr.id }}.png" download>Descargar PNG</a>
+                        <div style="font-size: 0.85rem; color: var(--muted); margin: 4px 0;">
+                            📅 {{ qr.fecha }} | ⏰ {{ qr.hora }}
+                        </div>
+                        <span class="token">Token: {{ qr.token }}</span>
                     </div>
+                    {% else %}
+                    <p style="color: var(--muted); text-align: center; padding: 20px;">
+                        No hay QRs generados aún. <a href="/generar-qr" style="color: var(--primary);">Generar uno nuevo</a>
+                    </p>
                     {% endfor %}
                 </div>
             </div>
@@ -82,22 +88,32 @@
                         <th>Empleado</th>
                         <th>Local</th>
                         <th>Fecha</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for r in registros %}
-                    <tr>
+                    <tr data-id="{{ r.id }}">
                         <td>{{ r.id }}</td>
                         <td>{{ r.empleado }}</td>
                         <td>{{ r.local }}</td>
                         <td>{{ r.fecha }}</td>
+                        <td>
+                            <button class="delete-btn" onclick="deleteRegistro({{ r.id }})" title="Eliminar registro">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </section>
-    </main>
+{% endblock %}
 
+{% block extra_js %}
     <script src="/static/admin.js"></script>
-</body>
-</html>
+{% endblock %}

@@ -1,13 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Confirmar Registro{% endblock %}
+{% block title %}Confirmar Registro QR Generado{% endblock %}
 
 {% block content %}
         <section class="card hero-card">
             <span class="eyebrow">Confirmacion</span>
-            <h1>Confirmar llegada/recolección</h1>
-            <p class="helper-text">Local detectado</p>
-            <h2>{{ local.nombre }}</h2>
+            <h1>Confirmar registro QR personalizado</h1>
+            <p class="helper-text">QR personalizado detectado</p>
+            <h2>{{ qr_generado.nombre_local }} - {{ qr_generado.nombre_empleado }}</h2>
+            <div style="font-size: 0.9rem; color: var(--muted); margin: 8px 0;">
+                📅 {{ qr_generado.fecha }} | ⏰ {{ qr_generado.hora }}
+            </div>
 
             {% if role == "user" %}
             <div class="session-info">
@@ -23,7 +26,7 @@
             </select>
             {% endif %}
 
-            <button class="btn" id="btnRegistrar" data-token="{{ local.qr_token }}">
+            <button class="btn" id="btnRegistrar" data-token="{{ qr_generado.token }}" data-type="qr_generado">
                 Registrar
             </button>
 
@@ -45,5 +48,5 @@
 {% endblock %}
 
 {% block extra_js %}
-    <script src="/static/confirmar.js"></script>
+    <script src="/static/confirmar_qr_generado.js"></script>
 {% endblock %}

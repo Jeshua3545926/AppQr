@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Escáner QR</title>
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-    <main class="container">
+{% extends "base.html" %}
+
+{% block title %}Escáner QR{% endblock %}
+
+{% block content %}
         <section class="card hero-card">
             <span class="eyebrow">Scanner</span>
             <h1>Escáner QR con cámara</h1>
@@ -35,9 +31,9 @@
                 <a class="btn secondary" href="/login">Login admin</a>
             </div>
         </section>
-    </main>
+{% endblock %}
 
+{% block extra_js %}
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="/static/scanner.js"></script>
-</body>
-</html>
+{% endblock %}

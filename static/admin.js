@@ -12,14 +12,62 @@ async function actualizarRegistros() {
 
     registros.forEach(r => {
         const tr = document.createElement("tr");
+        tr.setAttribute("data-id", r.id);
         tr.innerHTML = `
             <td>${r.id}</td>
             <td>${r.empleado}</td>
             <td>${r.local}</td>
             <td>${r.fecha}</td>
+            <td>
+                <button class="delete-btn" onclick="deleteRegistro(${r.id})" title="Eliminar registro">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+async function deleteRegistro(registroId) {
+    if (!confirm("¿Estás seguro de que deseas eliminar este registro?")) {
+        return;
+    }
+
+    const response = await fetch(`/api/registros/${registroId}`, {
+        method: "DELETE"
+    });
+
+    if (response.ok) {
+        const row = document.querySelector(`tr[data-id="${registroId}"]`);
+        if (row) {
+            row.remove();
+        }
+    } else {
+        alert("Error al eliminar el registro");
+    }
+}
+
+async function hideQR(qrId) {
+    if (!confirm("¿Estás seguro de que deseas ocultar este QR del dashboard? El QR seguirá existiendo en la base de datos.")) {
+        return;
+    }
+
+    const response = await fetch(`/api/qrs_generados/${qrId}`, {
+        method: "DELETE"
+    });
+
+    if (response.ok) {
+        const card = document.querySelector(`.qr-card[data-qr-id="${qrId}"]`);
+        if (card) {
+            card.remove();
+        }
+    } else {
+        alert("Error al ocultar el QR");
+    }
 }
 
 setInterval(actualizarRegistros, 5000);

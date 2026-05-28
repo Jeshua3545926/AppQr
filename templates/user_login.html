@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Login Usuario</title>
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-    <main class="login-container">
+{% extends "base.html" %}
+
+{% block title %}Login Usuario{% endblock %}
+
+{% block content %}
         <section class="card login-card hero-card">
             <span class="eyebrow">Empleado</span>
             <h1>Acceso Usuario</h1>
@@ -32,6 +28,4 @@
                 <a class="btn secondary" href="/login">Login admin</a>
             </div>
         </section>
-    </main>
-</body>
-</html>
+{% endblock %}
