@@ -184,7 +184,7 @@ def get_smtp_settings():
         conn = get_db()
         row = conn.execute(
             """
-            SELECT email, smtp_host, smtp_port, smtp_security, smtp_email, smtp_password
+            SELECT email, smtp_host, smtp_port, smtp_security, smtp_email, smtp_password, admin_email_destino
             FROM admins
             ORDER BY id ASC
             LIMIT 1
