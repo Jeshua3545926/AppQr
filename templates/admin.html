@@ -43,8 +43,12 @@
                                 </svg>
                             </button>
                         </div>
-                        <img src="/static/qrcodes/qr_generado_{{ qr.id }}.png" alt="QR {{ qr.nombre_local }}">
-                        <a class="small-link" href="/static/qrcodes/qr_generado_{{ qr.id }}.png" download>Descargar PNG</a>
+                        {% if qr.qr_imagen %}
+                        <img src="data:image/png;base64,{{ qr.qr_imagen }}" alt="QR {{ qr.nombre_local }}">
+                        <a class="small-link" href="data:image/png;base64,{{ qr.qr_imagen }}" download="qr_{{ qr.token }}.png">Descargar PNG</a>
+                        {% else %}
+                        <p style="color: var(--muted); font-size: 0.85rem;">Imagen no disponible</p>
+                        {% endif %}
                         <div style="font-size: 0.85rem; color: var(--muted); margin: 4px 0;">
                             📅 {{ qr.fecha }} | ⏰ {{ qr.hora }}
                         </div>

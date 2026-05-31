@@ -128,7 +128,8 @@ def ensure_qrs_generados_schema():
                 token TEXT NOT NULL,
                 admin_id INTEGER,
                 creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
-                visible INTEGER DEFAULT 1
+                visible INTEGER DEFAULT 1,
+                qr_imagen TEXT
             )
         """)
         conn.commit()
@@ -138,6 +139,9 @@ def ensure_qrs_generados_schema():
         columns = [row[1] for row in cur.fetchall()]
         if "visible" not in columns:
             cur.execute("ALTER TABLE qrs_generados ADD COLUMN visible INTEGER DEFAULT 1")
+            conn.commit()
+        if "qr_imagen" not in columns:
+            cur.execute("ALTER TABLE qrs_generados ADD COLUMN qr_imagen TEXT")
             conn.commit()
     conn.close()
 
@@ -439,19 +443,14 @@ def admin():
 
     # Obtener QRs generados recientes (solo visibles)
     qrs_generados = conn.execute('''
-        SELECT id, nombre_local, nombre_empleado, fecha, hora, token, creado_en
+        SELECT id, nombre_local, nombre_empleado, fecha, hora, token, creado_en, qr_imagen
         FROM qrs_generados
         WHERE visible = 1
         ORDER BY creado_en DESC
         LIMIT 10
     ''').fetchall()
 
-    # Generar imágenes de QRs personalizados (siempre regenerar con URL correcta)
-    for qr in qrs_generados:
-        qr_path = QR_DIR / f"qr_generado_{qr['id']}.png"
-        qr_url = f"{BASE_URL}/scan_qr_generado/{qr['token']}"
-        img = qrcode.make(qr_url)
-        img.save(qr_path)
+    # Ya no generamos archivos de imagen - usamos las imágenes de la base de datos
 
     conn.close()
 
@@ -1044,9 +1043,9 @@ def generar_qr():
                 # Guardar en BD
                 cur = conn.cursor()
                 cur.execute("""
-                    INSERT INTO qrs_generados (nombre_local, nombre_empleado, fecha, hora, token, admin_id, creado_en, visible)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-                """, (nombre_local, nombre_empleado, fecha, hora, qr_token, session.get("admin_id"), get_mexico_datetime()))
+                    INSERT INTO qrs_generados (nombre_local, nombre_empleado, fecha, hora, token, admin_id, creado_en, visible, qr_imagen)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+                """, (nombre_local, nombre_empleado, fecha, hora, qr_token, session.get("admin_id"), get_mexico_datetime(), qr_image))
                 conn.commit()
                 return redirect("/admin")
 
