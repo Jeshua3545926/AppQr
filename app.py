@@ -14,7 +14,6 @@ app = Flask(__name__)
 
 # Zona horaria de México (UTC-6)
 mexico_tz = pytz.timezone('America/Mexico_City')
-
 def get_mexico_time():
     """Obtener la fecha y hora actual en zona horaria de México"""
     return datetime.now(mexico_tz).strftime("%Y-%m-%d %H:%M:%S")
