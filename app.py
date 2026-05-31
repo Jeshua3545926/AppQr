@@ -453,6 +453,7 @@ def logout():
     session.clear()
     return response
 
+
 @app.route("/admin", methods=["GET", "POST"])
 @login_required
 def admin():
@@ -505,153 +506,33 @@ def admin():
 @app.route("/admin/settings", methods=["GET", "POST"])
 @login_required
 def admin_settings():
-    error = None
-    success = None
+    # Versión demo - configuración bloqueada
     conn = get_db()
-    admin_row = conn.execute("SELECT * FROM admins WHERE id = ?", (session["user_id"],)).fetchone()
+    registros = conn.execute('''
+        SELECT registros.id, empleados.nombre AS empleado, locales.nombre AS local, registros.fecha
+        FROM registros
+        JOIN empleados ON registros.empleado_id = empleados.id
+        JOIN locales ON registros.local_id = locales.id
+        ORDER BY registros.fecha DESC
+        LIMIT 50
+    ''').fetchall()
 
-    if request.method == "POST":
-        action = request.form.get("action", "save")
-        new_username = request.form.get("new_admin_username", "").strip()
-        new_email = request.form.get("admin_email", "").strip()
-        smtp_host = request.form.get("smtp_host", "").strip()
-        smtp_port_raw = request.form.get("smtp_port", "").strip()
-        smtp_security = request.form.get("smtp_security", "ssl").strip().lower()
-        smtp_email = request.form.get("smtp_email", "").strip()
-        smtp_password = request.form.get("smtp_password", "")
-        current_password = request.form.get("current_password", "")
-        new_password = request.form.get("new_password", "")
-        confirm_password = request.form.get("confirm_password", "")
+    qrs_generados = conn.execute('''
+        SELECT id, nombre_local, nombre_empleado, fecha, hora, token, creado_en, qr_imagen
+        FROM qrs_generados
+        WHERE visible = 1
+        ORDER BY creado_en DESC
+        LIMIT 10
+    ''').fetchall()
 
-        if admin_row is None:
-            error = "No se encontró el usuario administrador"
-        else:
-            smtp_port = None
-            if smtp_port_raw:
-                try:
-                    smtp_port = int(smtp_port_raw)
-                    if smtp_port <= 0:
-                        raise ValueError()
-                except ValueError:
-                    error = "El puerto SMTP debe ser un número válido"
-
-            if not error and smtp_security not in {"ssl", "starttls"}:
-                error = "Selecciona un tipo de seguridad SMTP válido"
-
-            if new_username and new_username != admin_row["username"]:
-                existing = conn.execute("SELECT id FROM admins WHERE username = ?", (new_username,)).fetchone()
-                if existing:
-                    error = "El nombre de usuario ya está en uso"
-                else:
-                    conn.execute("UPDATE admins SET username = ? WHERE id = ?", (new_username, session["user_id"]))
-                    session["username"] = new_username
-                    success = "Usuario administrador actualizado"
-            if not error and new_password:
-                if not current_password:
-                    error = "Ingresa tu contraseña actual para cambiar la contraseña"
-                elif hash_password(current_password) != admin_row["password_hash"]:
-                    error = "Contraseña actual incorrecta"
-                elif new_password != confirm_password:
-                    error = "La nueva contraseña y su confirmación no coinciden"
-                else:
-                    conn.execute("UPDATE admins SET password_hash = ? WHERE id = ?", (hash_password(new_password), session["user_id"]))
-                    success = "Contraseña actualizada correctamente"
-            current_email = admin_row["email"] if "email" in admin_row.keys() else ""
-            if not error and new_email != current_email:
-                conn.execute("UPDATE admins SET email = ? WHERE id = ?", (new_email, session["user_id"]))
-                success = "Datos de administrador actualizados"
-            current_smtp_host = admin_row["smtp_host"] if "smtp_host" in admin_row.keys() and admin_row["smtp_host"] else ""
-            current_smtp_port = admin_row["smtp_port"] if "smtp_port" in admin_row.keys() and admin_row["smtp_port"] else None
-            current_smtp_security = admin_row["smtp_security"] if "smtp_security" in admin_row.keys() and admin_row["smtp_security"] else "ssl"
-            current_smtp_email = admin_row["smtp_email"] if "smtp_email" in admin_row.keys() and admin_row["smtp_email"] else ""
-            current_smtp_password = admin_row["smtp_password"] if "smtp_password" in admin_row.keys() and admin_row["smtp_password"] else ""
-            current_admin_email_destino = admin_row["admin_email_destino"] if "admin_email_destino" in admin_row.keys() and admin_row["admin_email_destino"] else ""
-            current_sendgrid_api_key = admin_row["sendgrid_api_key"] if "sendgrid_api_key" in admin_row.keys() and admin_row["sendgrid_api_key"] else ""
-
-            smtp_changed = (
-                smtp_host != current_smtp_host
-                or smtp_port != current_smtp_port
-                or smtp_security != current_smtp_security
-                or smtp_email != current_smtp_email
-                or bool(smtp_password)
-            )
-            admin_email_destino = request.form.get("admin_email_destino", "").strip()
-            email_destino_changed = admin_email_destino != current_admin_email_destino
-            sendgrid_api_key = request.form.get("sendgrid_api_key", "").strip()
-            sendgrid_api_key_changed = sendgrid_api_key != current_sendgrid_api_key
-
-            if not error and smtp_changed:
-                conn.execute(
-                    """
-                    UPDATE admins
-                    SET smtp_host = ?, smtp_port = ?, smtp_security = ?, smtp_email = ?, smtp_password = ?
-                    WHERE id = ?
-                    """,
-                    (
-                        smtp_host,
-                        smtp_port,
-                        smtp_security,
-                        smtp_email,
-                        smtp_password if smtp_password else current_smtp_password,
-                        session["user_id"],
-                    )
-                )
-                success = "Configuración de correo actualizada"
-
-            if not error and email_destino_changed:
-                conn.execute("UPDATE admins SET admin_email_destino = ? WHERE id = ?", (admin_email_destino, session["user_id"]))
-                conn.commit()
-                if success:
-                    success += " y correo destino actualizado"
-                else:
-                    success = "Correo destino actualizado"
-
-            if not error and sendgrid_api_key_changed:
-                conn.execute("UPDATE admins SET sendgrid_api_key = ? WHERE id = ?", (sendgrid_api_key, session["user_id"]))
-                conn.commit()
-                if success:
-                    success += " y API Key de SendGrid actualizada"
-                else:
-                    success = "API Key de SendGrid actualizada"
-
-            if not error:
-                conn.commit()
-                admin_row = conn.execute("SELECT * FROM admins WHERE id = ?", (session["user_id"],)).fetchone()
-                if action == "test_smtp":
-                    test_subject = "Prueba de configuracion SMTP"
-                    test_body = (
-                        f"Hola {session.get('username', 'admin')},\n\n"
-                        "Este es un correo de prueba enviado desde la configuracion de la app.\n"
-                        "Si recibiste este mensaje, la configuracion SMTP esta funcionando.\n"
-                    )
-                    correo_resultado = enviar_correo(test_subject, test_body)
-                    if correo_resultado["ok"]:
-                        success = "Correo de prueba enviado correctamente"
-                    else:
-                        error = f"No se pudo enviar el correo de prueba: {correo_resultado['message']}"
-
-    admin_email = admin_row["email"] if admin_row and "email" in admin_row.keys() else ""
-    admin_username = admin_row["username"] if admin_row else ""
-    smtp_host_value = admin_row["smtp_host"] if admin_row and "smtp_host" in admin_row.keys() and admin_row["smtp_host"] else SMTP_HOST
-    smtp_port_value = admin_row["smtp_port"] if admin_row and "smtp_port" in admin_row.keys() and admin_row["smtp_port"] else SMTP_PORT
-    smtp_security_value = admin_row["smtp_security"] if admin_row and "smtp_security" in admin_row.keys() and admin_row["smtp_security"] else SMTP_SECURITY
-    smtp_email_value = admin_row["smtp_email"] if admin_row and "smtp_email" in admin_row.keys() and admin_row["smtp_email"] else SMTP_EMAIL
-    admin_email_destino_value = admin_row["admin_email_destino"] if admin_row and "admin_email_destino" in admin_row.keys() and admin_row["admin_email_destino"] else ADMIN_EMAIL
-    sendgrid_api_key_value = admin_row["sendgrid_api_key"] if admin_row and "sendgrid_api_key" in admin_row.keys() and admin_row["sendgrid_api_key"] else ""
     conn.close()
 
     return render_template(
-        "admin_settings.html",
-        admin_email=admin_email,
-        admin_username=admin_username,
-        smtp_host=smtp_host_value,
-        smtp_port=smtp_port_value,
-        smtp_security=smtp_security_value,
-        smtp_email=smtp_email_value,
-        admin_email_destino=admin_email_destino_value,
-        sendgrid_api_key=sendgrid_api_key_value,
-        error=error,
-        success=success
+        "admin.html",
+        registros=registros,
+        qrs_generados=qrs_generados,
+        error="Configuración bloqueada en versión demo",
+        success=None
     )
 
 @app.route("/descargar-registros")
@@ -671,13 +552,14 @@ def descargar_registros():
 @app.route("/descargar-qrs")
 @login_required
 def descargar_qrs():
-    generar_qr_files()
-    pdf_path = generar_pdf_qrs()
+    # generar_qr_files()
+    # pdf_path = generar_pdf_qrs()
 
-    if not pdf_path or not pdf_path.exists():
-        return "No se pudo generar PDF. Revisa que reportlab esté instalado.", 500
+    # if not pdf_path or not pdf_path.exists():
+    #     return "No se pudo generar PDF. Revisa que reportlab esté instalado.", 500
 
-    return send_file(pdf_path, as_attachment=True)
+    # return send_file(pdf_path, as_attachment=True)
+    return render_template("404Pdf.html")
 
 @app.route("/scanner")
 def scanner():
@@ -1081,31 +963,37 @@ def generar_qr():
         hora = request.form.get("hora", "").strip()
 
         if nombre_local and nombre_empleado and fecha and hora:
-            qr_token = hashlib.sha256(f"{nombre_local}{nombre_empleado}{fecha}{hora}{get_mexico_datetime().timestamp()}".encode()).hexdigest()[:12].upper()
-            qr_url = f"{BASE_URL}/scan_qr_generado/{qr_token}"
-
-            try:
-                import io
-                import base64
-
-                img = qrcode.make(qr_url)
-                img_io = io.BytesIO()
-                img.save(img_io, 'PNG')
-                img_io.seek(0)
-                qr_image = base64.b64encode(img_io.getvalue()).decode()
-
-                # Guardar en BD
-                cur = conn.cursor()
-                cur.execute("""
-                    INSERT INTO qrs_generados (nombre_local, nombre_empleado, fecha, hora, token, admin_id, creado_en, visible, qr_imagen)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
-                """, (nombre_local, nombre_empleado, fecha, hora, qr_token, session.get("admin_id"), get_mexico_datetime(), qr_image))
-                conn.commit()
-                return redirect("/admin")
-
-            except Exception as e:
-                error = f"Error al generar QR: {str(e)}"
+            # Verificar límite de 10 QRs
+            qr_count = conn.execute("SELECT COUNT(*) FROM qrs_generados WHERE visible = 1").fetchone()[0]
+            if qr_count >= 10:
+                error = "Límite de 10 QRs alcanzado. Esta es una versión demo."
                 qr_image = None
+            else:
+                qr_token = hashlib.sha256(f"{nombre_local}{nombre_empleado}{fecha}{hora}{get_mexico_datetime().timestamp()}".encode()).hexdigest()[:12].upper()
+                qr_url = f"{BASE_URL}/scan_qr_generado/{qr_token}"
+
+                try:
+                    import io
+                    import base64
+
+                    img = qrcode.make(qr_url)
+                    img_io = io.BytesIO()
+                    img.save(img_io, 'PNG')
+                    img_io.seek(0)
+                    qr_image = base64.b64encode(img_io.getvalue()).decode()
+
+                    # Guardar en BD
+                    cur = conn.cursor()
+                    cur.execute("""
+                        INSERT INTO qrs_generados (nombre_local, nombre_empleado, fecha, hora, token, admin_id, creado_en, visible, qr_imagen)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+                    """, (nombre_local, nombre_empleado, fecha, hora, qr_token, session.get("admin_id"), get_mexico_datetime(), qr_image))
+                    conn.commit()
+                    return redirect("/admin")
+
+                except Exception as e:
+                    error = f"Error al generar QR: {str(e)}"
+                    qr_image = None
 
     conn.close()
 

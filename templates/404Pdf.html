@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Página no encontrada</title>
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body{
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            background: linear-gradient(135deg,#172225,#0d1117);
+            color:white;
+        }
+
+        .container{
+            text-align:center;
+            max-width:600px;
+            padding:40px;
+        }
+
+        .error-code{
+            font-size:120px;
+            font-weight:bold;
+            color:#00d4ff;
+            text-shadow:0 0 20px rgba(0,212,255,.5);
+        }
+
+        h1{
+            margin-bottom:15px;
+            font-size:32px;
+        }
+
+        p{
+            color:#b8c1cc;
+            font-size:18px;
+            margin-bottom:30px;
+        }
+
+        .btn{
+            display:inline-block;
+            padding:12px 24px;
+            background:#00d4ff;
+            color:#111;
+            text-decoration:none;
+            border-radius:10px;
+            font-weight:bold;
+            transition:.3s;
+        }
+
+        .btn:hover{
+            transform:translateY(-3px);
+            box-shadow:0 0 15px rgba(0,212,255,.5);
+        }
+
+        .icon{
+            font-size:70px;
+            margin-bottom:15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="icon">🚧</div>
+
+        <div class="error-code">404</div>
+
+        <h1>Página no encontrada</h1>
+
+        <p>
+            Lo sentimos, la página que intentas visitar no existe
+            o se encuentra en mantenimiento temporal.
+        </p>
+
+        <a href="/" class="btn">
+            Volver al inicio
+        </a>
+    </div>
+
+</body>
+</html>
