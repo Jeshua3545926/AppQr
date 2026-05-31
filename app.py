@@ -169,6 +169,25 @@ def ensure_qrs_generados_schema():
             conn.commit()
     conn.close()
 
+def ensure_registros_schema():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='registros'")
+    table_exists = cur.fetchone()
+    if not table_exists:
+        cur.execute("""
+            CREATE TABLE registros (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                empleado_id INTEGER NOT NULL,
+                local_id INTEGER NOT NULL,
+                fecha TEXT NOT NULL,
+                FOREIGN KEY (empleado_id) REFERENCES empleados(id),
+                FOREIGN KEY (local_id) REFERENCES locales(id)
+            )
+        """)
+        conn.commit()
+    conn.close()
+
 
 
 @app.before_request
@@ -1111,6 +1130,12 @@ if __name__ == "__main__":
     # Ensure qrs_generados table exists
     try:
         ensure_qrs_generados_schema()
+    except Exception:
+        pass
+    
+    # Ensure registros table exists
+    try:
+        ensure_registros_schema()
     except Exception:
         pass
 
