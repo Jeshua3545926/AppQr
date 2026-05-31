@@ -3,3 +3,5 @@ pyjwt
 qrcode[pil]
 reportlab
 gunicorn
+requests
+pytz

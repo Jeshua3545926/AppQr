@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, jsonify, send_file, session, url_for
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import smtplib
 from email.message import EmailMessage
@@ -9,8 +9,20 @@ import qrcode
 import hashlib
 import jwt
 from functools import wraps
+import pytz
 
 app = Flask(__name__)
+
+# Zona horaria de México (UTC-6)
+mexico_tz = pytz.timezone('America/Mexico_City')
+
+def get_mexico_time():
+    """Obtener la fecha y hora actual en zona horaria de México"""
+    return datetime.now(mexico_tz).strftime("%Y-%m-%d %H:%M:%S")
+
+def get_mexico_datetime():
+    """Obtener el datetime actual en zona horaria de México"""
+    return datetime.now(mexico_tz)
 
 app.secret_key = os.getenv("SECRET_KEY", "cambia_esta_clave_secreta")
 JWT_SECRET = os.getenv("JWT_SECRET", "jwt_secret_key_cambiar_en_produccion")
@@ -92,6 +104,7 @@ def ensure_admin_schema():
         ("smtp_email", "ALTER TABLE admins ADD COLUMN smtp_email TEXT"),
         ("smtp_password", "ALTER TABLE admins ADD COLUMN smtp_password TEXT"),
         ("admin_email_destino", "ALTER TABLE admins ADD COLUMN admin_email_destino TEXT"),
+        ("sendgrid_api_key", "ALTER TABLE admins ADD COLUMN sendgrid_api_key TEXT"),
     ]
     for column_name, sql in schema_updates:
         if column_name not in columns:
@@ -184,7 +197,7 @@ def get_smtp_settings():
         conn = get_db()
         row = conn.execute(
             """
-            SELECT email, smtp_host, smtp_port, smtp_security, smtp_email, smtp_password, admin_email_destino
+            SELECT email, smtp_host, smtp_port, smtp_security, smtp_email, smtp_password, admin_email_destino, sendgrid_api_key
             FROM admins
             ORDER BY id ASC
             LIMIT 1
@@ -207,6 +220,8 @@ def get_smtp_settings():
                 settings["smtp_email"] = row["smtp_email"].strip()
             if row["smtp_password"]:
                 settings["smtp_password"] = row["smtp_password"]
+            if row["sendgrid_api_key"]:
+                settings["sendgrid_api_key"] = row["sendgrid_api_key"].strip()
     except Exception:
         pass
 
@@ -222,16 +237,14 @@ def get_smtp_settings():
 
 
 def enviar_correo(asunto, cuerpo):
-    settings = get_smtp_settings()
-    admin_email = settings["admin_email"]
-    smtp_email = settings["smtp_email"]
-    smtp_password = settings["smtp_password"]
-    smtp_host = settings["smtp_host"]
-    smtp_port = settings["smtp_port"]
-    smtp_security = settings["smtp_security"]
+    import requests
 
-    if not smtp_email or not smtp_password or not admin_email:
-        error_message = "Falta configurar correo emisor, clave SMTP o correo destino del admin"
+    settings = get_smtp_settings()
+    mailgun_api_key = settings.get("sendgrid_api_key", "")  # Reutilizamos el campo para Mailgun API Key
+    admin_email = settings["admin_email"]
+
+    if not mailgun_api_key or not admin_email:
+        error_message = "Falta configurar API Key de Mailgun o correo destino del admin"
         print(f"Correo no configurado: {error_message}. Registro guardado sin enviar email.")
         return {
             "ok": False,
@@ -239,32 +252,40 @@ def enviar_correo(asunto, cuerpo):
             "message": error_message,
         }
 
-    msg = EmailMessage()
-    msg["Subject"] = asunto
-    msg["From"] = smtp_email
-    msg["To"] = admin_email
-    msg.set_content(cuerpo)
-
     try:
-        print(f"Intentando enviar correo con: host={smtp_host}, port={smtp_port}, security={smtp_security}")
-        if smtp_security == "starttls":
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.ehlo()
-                smtp.login(smtp_email, smtp_password)
-                smtp.send_message(msg)
+        # Usar sandbox de Mailgun para pruebas
+        url = "https://api.mailgun.net/v3/sandboxXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.mailgun.org/messages"
+        
+        # Si tienes tu dominio de Mailgun, usa:
+        # url = "https://api.mailgun.net/v3/YOUR_DOMAIN/messages"
+        
+        response = requests.post(
+            url,
+            auth=("api", mailgun_api_key),
+            data={
+                "from": "noreply@appqr-g3ft.onrender.com",
+                "to": admin_email,
+                "subject": asunto,
+                "text": cuerpo
+            },
+            timeout=30
+        )
+
+        print(f"Mailgun response status: {response.status_code}")
+        if response.status_code >= 200 and response.status_code < 300:
+            return {
+                "ok": True,
+                "status": "sent",
+                "message": "Correo enviado",
+            }
         else:
-            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=30) as smtp:
-                smtp.login(smtp_email, smtp_password)
-                smtp.send_message(msg)
-        return {
-            "ok": True,
-            "status": "sent",
-            "message": "Correo enviado",
-        }
+            return {
+                "ok": False,
+                "status": "error",
+                "message": f"Mailgun error: {response.status_code} - {response.text}",
+            }
     except Exception as e:
-        print(f"Error enviando correo: {e}")
+        print(f"Error enviando correo con Mailgun: {e}")
         import traceback
         traceback.print_exc()
         return {
@@ -506,6 +527,7 @@ def admin_settings():
             current_smtp_email = admin_row["smtp_email"] if "smtp_email" in admin_row.keys() and admin_row["smtp_email"] else ""
             current_smtp_password = admin_row["smtp_password"] if "smtp_password" in admin_row.keys() and admin_row["smtp_password"] else ""
             current_admin_email_destino = admin_row["admin_email_destino"] if "admin_email_destino" in admin_row.keys() and admin_row["admin_email_destino"] else ""
+            current_sendgrid_api_key = admin_row["sendgrid_api_key"] if "sendgrid_api_key" in admin_row.keys() and admin_row["sendgrid_api_key"] else ""
 
             smtp_changed = (
                 smtp_host != current_smtp_host
@@ -516,6 +538,8 @@ def admin_settings():
             )
             admin_email_destino = request.form.get("admin_email_destino", "").strip()
             email_destino_changed = admin_email_destino != current_admin_email_destino
+            sendgrid_api_key = request.form.get("sendgrid_api_key", "").strip()
+            sendgrid_api_key_changed = sendgrid_api_key != current_sendgrid_api_key
 
             if not error and smtp_changed:
                 conn.execute(
@@ -543,6 +567,14 @@ def admin_settings():
                 else:
                     success = "Correo destino actualizado"
 
+            if not error and sendgrid_api_key_changed:
+                conn.execute("UPDATE admins SET sendgrid_api_key = ? WHERE id = ?", (sendgrid_api_key, session["user_id"]))
+                conn.commit()
+                if success:
+                    success += " y API Key de SendGrid actualizada"
+                else:
+                    success = "API Key de SendGrid actualizada"
+
             if not error:
                 conn.commit()
                 admin_row = conn.execute("SELECT * FROM admins WHERE id = ?", (session["user_id"],)).fetchone()
@@ -566,6 +598,7 @@ def admin_settings():
     smtp_security_value = admin_row["smtp_security"] if admin_row and "smtp_security" in admin_row.keys() and admin_row["smtp_security"] else SMTP_SECURITY
     smtp_email_value = admin_row["smtp_email"] if admin_row and "smtp_email" in admin_row.keys() and admin_row["smtp_email"] else SMTP_EMAIL
     admin_email_destino_value = admin_row["admin_email_destino"] if admin_row and "admin_email_destino" in admin_row.keys() and admin_row["admin_email_destino"] else ADMIN_EMAIL
+    sendgrid_api_key_value = admin_row["sendgrid_api_key"] if admin_row and "sendgrid_api_key" in admin_row.keys() and admin_row["sendgrid_api_key"] else ""
     conn.close()
 
     return render_template(
@@ -577,6 +610,7 @@ def admin_settings():
         smtp_security=smtp_security_value,
         smtp_email=smtp_email_value,
         admin_email_destino=admin_email_destino_value,
+        sendgrid_api_key=sendgrid_api_key_value,
         error=error,
         success=success
     )
@@ -620,7 +654,7 @@ def scan_token(token):
         empleado = conn.execute("SELECT * FROM empleados WHERE id = ?", (empleado_id,)).fetchone()
 
         if empleado:
-            fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            fecha = get_mexico_time()
 
             # Registrar en historial
             conn.execute(
@@ -667,7 +701,7 @@ def scan_qr_generado(token):
         empleado = conn.execute("SELECT * FROM empleados WHERE id = ?", (empleado_id,)).fetchone()
 
         if empleado:
-            fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            fecha = get_mexico_time()
 
             # Verificar si el local existe, si no, crearlo
             local = conn.execute("SELECT * FROM locales WHERE nombre = ?", (qr_generado["nombre_local"],)).fetchone()
@@ -735,7 +769,7 @@ def api_registrar_simple():
         conn.close()
         return jsonify({"ok": False, "error": "Empleado inválido"}), 404
 
-    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    fecha = get_mexico_time()
 
     conn.execute(
         "INSERT INTO registros (empleado_id, local_id, fecha) VALUES (?, ?, ?)",
@@ -784,7 +818,7 @@ def api_registrar():
         conn.close()
         return jsonify({"ok": False, "error": "Empleado inválido"}), 404
 
-    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    fecha = get_mexico_time()
 
     conn.execute(
         "INSERT INTO registros (empleado_id, local_id, fecha) VALUES (?, ?, ?)",
@@ -830,7 +864,7 @@ def api_registrar_qr_generado_simple():
         conn.close()
         return jsonify({"ok": False, "error": "Empleado inválido"}), 404
 
-    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    fecha = get_mexico_time()
 
     # Insertar en registros usando el nombre del local del QR generado
     # Primero verificamos si el local existe en la tabla locales
@@ -898,7 +932,7 @@ def api_registrar_qr_generado():
         conn.close()
         return jsonify({"ok": False, "error": "Empleado inválido"}), 404
 
-    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    fecha = get_mexico_time()
 
     # Insertar en registros usando el nombre del local del QR generado
     # Primero verificamos si el local existe en la tabla locales
@@ -994,7 +1028,7 @@ def generar_qr():
         hora = request.form.get("hora", "").strip()
 
         if nombre_local and nombre_empleado and fecha and hora:
-            qr_token = hashlib.sha256(f"{nombre_local}{nombre_empleado}{fecha}{hora}{datetime.now().timestamp()}".encode()).hexdigest()[:12].upper()
+            qr_token = hashlib.sha256(f"{nombre_local}{nombre_empleado}{fecha}{hora}{get_mexico_datetime().timestamp()}".encode()).hexdigest()[:12].upper()
             qr_url = f"{BASE_URL}/scan_qr_generado/{qr_token}"
 
             try:
@@ -1012,7 +1046,7 @@ def generar_qr():
                 cur.execute("""
                     INSERT INTO qrs_generados (nombre_local, nombre_empleado, fecha, hora, token, admin_id, creado_en, visible)
                     VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-                """, (nombre_local, nombre_empleado, fecha, hora, qr_token, session.get("admin_id"), datetime.now()))
+                """, (nombre_local, nombre_empleado, fecha, hora, qr_token, session.get("admin_id"), get_mexico_datetime()))
                 conn.commit()
                 return redirect("/admin")
 
