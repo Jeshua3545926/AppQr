@@ -1142,3 +1142,4 @@ if __name__ == "__main__":
     # generar_qr_files()  # Deshabilitado - ya no se generan QRs estáticos para locales
     generar_pdf_qrs()
     app.run(host = "0.0.0.0", port =5000, debug=True)
+ 
