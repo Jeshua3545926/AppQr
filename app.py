@@ -211,12 +211,15 @@ def role_required(role):
         def wrapped_view(*args, **kwargs):
             token = get_token_from_request()
             if not token:
+                print(f"DEBUG: No token found for path: {request.path}")
                 if request.path.startswith('/api/'):
                     return jsonify({"ok": False, "error": "No autorizado"}), 401
                 return redirect(url_for("login"))
 
             payload = verify_jwt_token(token)
+            print(f"DEBUG: Payload for {request.path}: {payload}, required role: {role}")
             if not payload or payload.get('role') != role:
+                print(f"DEBUG: Role check failed. Payload role: {payload.get('role') if payload else None}, required: {role}")
                 if request.path.startswith('/api/'):
                     return jsonify({"ok": False, "error": "No autorizado"}), 403
                 return redirect(url_for("login"))
