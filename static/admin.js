@@ -50,7 +50,7 @@ async function deleteRegistro(registroId) {
 
     if (response.ok) {
         const row = document.querySelector(`tr[data-id="${registroId}"]`);
-        if (row) {
+        if (row) { 
             row.remove();
         }
     } else {
