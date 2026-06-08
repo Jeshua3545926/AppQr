@@ -24,7 +24,7 @@ def get_mexico_datetime():
     return datetime.now(mexico_tz)
 
 app.secret_key = os.getenv("SECRET_KEY", "cambia_esta_clave_secreta")
-JWT_SECRET = os.getenv("JWT_SECRET", "jwt_secret_key_cambiar_en_produccion")
+JWT_SECRET = os.getenv("JWT_SECRET", "qr_asistencia_secret_key_2024_fixed")
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "database.db"
 QR_DIR = BASE_DIR / "static" / "qrcodes"
