@@ -37,9 +37,15 @@ async function deleteRegistro(registroId) {
         return;
     }
 
+    const token = document.cookie.split('; ').find(row => row.startsWith('jwt_token='));
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token.split('=')[1]}`;
+    }
+
     const response = await fetch(`/api/registros/${registroId}`, {
         method: "DELETE",
-        credentials: 'include'
+        headers: headers
     });
 
     if (response.ok) {
@@ -57,9 +63,15 @@ async function hideQR(qrId) {
         return;
     }
 
+    const token = document.cookie.split('; ').find(row => row.startsWith('jwt_token='));
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token.split('=')[1]}`;
+    }
+
     const response = await fetch(`/api/qrs_generados/${qrId}`, {
         method: "DELETE",
-        credentials: 'include'
+        headers: headers
     });
 
     if (response.ok) {
