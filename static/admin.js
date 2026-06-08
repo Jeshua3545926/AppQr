@@ -38,7 +38,8 @@ async function deleteRegistro(registroId) {
     }
 
     const response = await fetch(`/api/registros/${registroId}`, {
-        method: "DELETE"
+        method: "DELETE",
+        credentials: 'include'
     });
 
     if (response.ok) {
@@ -57,7 +58,8 @@ async function hideQR(qrId) {
     }
 
     const response = await fetch(`/api/qrs_generados/${qrId}`, {
-        method: "DELETE"
+        method: "DELETE",
+        credentials: 'include'
     });
 
     if (response.ok) {
