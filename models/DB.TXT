@@ -1,0 +1,82 @@
+
+def get_db():
+    """Obtener conexión a la base de datos"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def ensure_admin_schema():
+    """Asegurar que la tabla admins tenga las columnas necesarias"""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(admins)")
+    columns = [row[1] for row in cur.fetchall()]
+    schema_updates = [
+        # ("email", "ALTER TABLE admins ADD COLUMN email TEXT"),
+        # ("smtp_host", "ALTER TABLE admins ADD COLUMN smtp_host TEXT"),
+        # ("smtp_port", "ALTER TABLE admins ADD COLUMN smtp_port INTEGER"),
+        # ("smtp_security", "ALTER TABLE admins ADD COLUMN smtp_security TEXT"),
+        # ("smtp_email", "ALTER TABLE admins ADD COLUMN smtp_email TEXT"),
+        # ("smtp_password", "ALTER TABLE admins ADD COLUMN smtp_password TEXT"),
+        # ("admin_email_destino", "ALTER TABLE admins ADD COLUMN admin_email_destino TEXT"),
+        ("sendgrid_api_key", "ALTER TABLE admins ADD COLUMN sendgrid_api_key TEXT"),
+    ]
+    for column_name, sql in schema_updates:
+        if column_name not in columns:
+            cur.execute(sql)
+            conn.commit()
+    conn.close()
+
+def ensure_qrs_generados_schema():
+    """Asegurar que la tabla qrs_generados exista y tenga las columnas necesarias"""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='qrs_generados'")
+    table_exists = cur.fetchone()
+    if not table_exists:
+        cur.execute("""
+            CREATE TABLE qrs_generados (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre_local TEXT NOT NULL,
+                nombre_empleado TEXT NOT NULL,
+                fecha TEXT NOT NULL,
+                hora TEXT NOT NULL,
+                token TEXT NOT NULL,
+                admin_id INTEGER,
+                creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+                visible INTEGER DEFAULT 1,
+                qr_imagen TEXT
+            )
+        """)
+        conn.commit()
+    else:
+        # Check if visible column exists, add it if not
+        cur.execute("PRAGMA table_info(qrs_generados)")
+        columns = [row[1] for row in cur.fetchall()]
+        if "visible" not in columns:
+            cur.execute("ALTER TABLE qrs_generados ADD COLUMN visible INTEGER DEFAULT 1")
+            conn.commit()
+        if "qr_imagen" not in columns:
+            cur.execute("ALTER TABLE qrs_generados ADD COLUMN qr_imagen TEXT")
+            conn.commit()
+    conn.close()
+
+def ensure_registros_schema():
+    """Asegurar que la tabla registros exista"""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='registros'")
+    table_exists = cur.fetchone()
+    if not table_exists:
+        cur.execute("""
+            CREATE TABLE registros (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                empleado_id INTEGER NOT NULL,
+                local_id INTEGER NOT NULL,
+                fecha TEXT NOT NULL,
+                FOREIGN KEY (empleado_id) REFERENCES empleados(id),
+                FOREIGN KEY (local_id) REFERENCES locales(id)
+            )
+        """)
+        conn.commit()
+    conn.close()

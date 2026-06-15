@@ -7,7 +7,7 @@
             <div>
                 <span class="eyebrow">Settings</span>
                 <h1>Configuración de Administrador</h1>
-                <p class="lead">Admin: {{ session.get("username") }}. Personaliza la cuenta, el correo de destino y el SMTP desde un solo lugar.</p>
+                <p class="lead">Admin: {{ session.get("username") }}. Personaliza la cuenta</p>
             </div>
         </section>
 
@@ -35,52 +35,7 @@
                         <label>Usuario</label>
                         <input type="text" name="new_admin_username" value="{{ admin_username }}" required>
                     </div>
-                    <div>
-                        <label>Correo del admin</label>
-                        <input type="email" name="admin_email" value="{{ admin_email }}" placeholder="admin@dominio.com">
-                    </div>
                 </div>
-
-                <label>Correo destino de notificaciones</label>
-                <input type="email" name="admin_email_destino" value="{{ admin_email_destino }}" placeholder="notificaciones@dominio.com">
-
-                <div class="section-heading">
-                    <div>
-                        <h2>Configuración SMTP</h2>
-                        <p class="helper-text">Define la cuenta emisora, la seguridad y prueba la conexión antes de usarla en producción.</p>
-                    </div>
-                </div>
-
-                <div class="split-grid">
-                    <div>
-                        <label>Servidor SMTP</label>
-                        <input type="text" name="smtp_host" value="{{ smtp_host }}" placeholder="smtp.gmail.com">
-                    </div>
-                    <div>
-                        <label>Puerto SMTP</label>
-                        <input type="number" name="smtp_port" value="{{ smtp_port }}" placeholder="465" min="1">
-                    </div>
-                </div>
-
-                <div class="split-grid">
-                    <div>
-                        <label>Seguridad SMTP</label>
-                        <select name="smtp_security">
-                            <option value="ssl" {% if smtp_security == "ssl" %}selected{% endif %}>SSL</option>
-                            <option value="starttls" {% if smtp_security == "starttls" %}selected{% endif %}>STARTTLS</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Correo emisor</label>
-                        <input type="email" name="smtp_email" value="{{ smtp_email }}" placeholder="notificaciones@dominio.com">
-                    </div>
-                </div>
-
-                <label>Contraseña SMTP o de aplicación</label>
-                <input type="password" name="smtp_password" placeholder="Dejar vacío para conservar la actual" autocomplete="new-password">
-
-                <label>Mailgun API Key (usa Mailgun en lugar de SMTP)</label>
-                <input type="password" name="sendgrid_api_key" placeholder="key-xxxxxxxxxxxxxxxx" autocomplete="new-password">
 
                 <div class="section-heading">
                     <div>

@@ -7,7 +7,7 @@ async function actualizarRegistros() {
 
     const registros = await response.json();
     const tbody = document.querySelector("#tablaRegistros tbody");
-
+//http://192.168.100.7:5000/scan_qr_generado
     tbody.innerHTML = "";
 
     registros.forEach(r => {
@@ -82,6 +82,62 @@ async function hideQR(qrId) {
         }
     } else {
         alert("Error al ocultar el QR");
+    }
+}
+
+async function importarEmpleados(){
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const token = document.cookie.split('; ').find(row => row.startsWith('jwt_token='));
+        const headers = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token.split('=')[1]}`;
+        }
+        
+        const response = await fetch("/api/importar-empleados", {
+            method: "POST",
+            headers: headers,
+            body: formData
+        });
+        if (response.ok) {
+            alert("Empleados importados correctamente");
+        } else {
+            alert("Error al importar empleados");
+        }
+    };
+    input.click();
+}
+
+async function exportarEmpleados() {
+    const token = document.cookie.split('; ').find(row => row.startsWith('jwt_token='));
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token.split('=')[1]}`;
+    }
+
+    const response = await fetch("/api/exportar-empleados", {
+        method: "GET",
+        headers: headers
+    });
+
+    if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `empleados_${new Date().toISOString().slice(0,10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } else {
+        alert("Error al exportar empleados");
     }
 }
 

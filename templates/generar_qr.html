@@ -25,12 +25,10 @@
                     <div class="split-grid">
                         <div>
                             <label>Nombre del Local</label>
-                            <input 
-                                type="text" 
-                                name="nombre_local" 
-                                placeholder="Ej. Local Centro"
-                                required
-                            >
+                            <select name="nombre_local" id="localeSelect">
+                                <option value="">Seleccione un local</option>
+                            </select>
+
                         </div>
                         <div>
                             <label>Empleado</label>
@@ -59,6 +57,10 @@
                                 name="hora"
                                 required
                             >
+                        </div>
+                        <div>
+                            <button type="button" class="btn" onclick="importLocales()">Importar locales</button>
+                            <button type="button" class="btn" onclick="exportLocales()">exportar locales</button>
                         </div>
                     </div>
 
@@ -138,6 +140,32 @@
 
 {% block extra_js %}
     <script>
+        // Cargar locales dinámicamente
+        async function loadLocales() {
+            const token = document.cookie.split('; ').find(row => row.startsWith('jwt_token='));
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token.split('=')[1]}`;
+            }
+
+            const response = await fetch("/api/locales", {
+                method: "GET",
+                headers: headers
+            });
+
+            if (response.ok) {
+                const locales = await response.json();
+                const select = document.getElementById('localeSelect');
+                select.innerHTML = '<option value="">Seleccione un local</option>';
+                locales.forEach(local => {
+                    const option = document.createElement('option');
+                    option.value = local.nombre_local;
+                    option.textContent = local.nombre_local;
+                    select.appendChild(option);
+                });
+            }
+        }
+
         // Establecer fecha actual por defecto
         document.addEventListener('DOMContentLoaded', function() {
             const fechaInput = document.querySelector('input[name="fecha"]');
@@ -145,7 +173,9 @@
                 const today = new Date().toISOString().split('T')[0];
                 fechaInput.value = today;
             }
+            loadLocales();
         });
+
 
         // Descargar QR como PNG
         function descargarQR() {
@@ -159,5 +189,65 @@
             link.click();
             document.body.removeChild(link);
         }
+
+        // Exportar locales
+        async function exportLocales() {
+            const token = document.cookie.split('; ').find(row => row.startsWith('jwt_token='));
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token.split('=')[1]}`;
+            }
+
+            const response = await fetch("/api/exportar-locales", {
+                method: "GET",
+                headers: headers
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `locales_${new Date().toISOString().slice(0,10)}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else {
+                alert("Error al exportar locales");
+            }
+        }
+
+        // Importar locales
+        async function importLocales() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xlsx,.xls';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const token = document.cookie.split('; ').find(row => row.startsWith('jwt_token='));
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token.split('=')[1]}`;
+                }
+                
+                const response = await fetch("/api/importar-locales", {
+                    method: "POST",
+                    headers: headers,
+                    body: formData
+                });
+                if (response.ok) {
+                    alert("Locales importados correctamente");
+                    location.reload();
+                } else {
+                    alert("Error al importar locales");
+                }
+            };
+            input.click();
+        }
+
     </script>
 {% endblock %}
