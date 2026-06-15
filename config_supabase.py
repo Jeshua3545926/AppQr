@@ -10,3 +10,4 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "sb_publishab
 
 # Para operaciones que requieren permisos elevados (como migración de datos)
 # usa SUPABASE_SERVICE_ROLE_KEY en lugar de SUPABASE_KEY
+ 
