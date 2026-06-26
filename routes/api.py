@@ -276,9 +276,24 @@ def importar_empleados_route():
     return jsonify({"ok": True, "message": "Empleados importados"})
 
 
-@api_bp.route("/api/locales")
-def get_locales():
+@api_bp.route("/api/locales", methods=["GET", "POST"])
+def locales():
     db = get_db()
+    
+    if request.method == "POST":
+        data = request.get_json()
+        nombre_local = data.get('nombre_local', '').strip()
+        
+        if not nombre_local:
+            return jsonify({"ok": False, "message": "Nombre del local es requerido"}), 400
+        
+        try:
+            db.table('locales').insert({'nombre_local': nombre_local}).execute()
+            return jsonify({"ok": True, "message": "Local agregado correctamente"})
+        except Exception as e:
+            return jsonify({"ok": False, "message": f"Error al agregar local: {str(e)}"}), 500
+    
+    # GET request
     response = db.table('locales').select('*').execute()
     return jsonify(response.data)
 

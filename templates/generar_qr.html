@@ -25,9 +25,22 @@
                     <div class="split-grid">
                         <div>
                             <label>Nombre del Local</label>
-                            <select name="nombre_local" id="localeSelect">
-                                <option value="">Seleccione un local</option>
-                            </select>
+                            <div style="display: flex; gap: 8px;">
+                                <select name="nombre_local" id="localeSelect" style="flex: 1;">
+                                    <option value="">Seleccione un local</option>
+                                </select>
+                                <button type="button" class="btn" onclick="showAddLocalInput()" title="Agregar nuevo local">+</button>
+                            </div>
+                            <div id="addLocalInput" style="display: none; margin-top: 8px;">
+                                <input 
+                                    type="text" 
+                                    id="newLocalName" 
+                                    placeholder="Nombre del nuevo local"
+                                    style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px;"
+                                >
+                                <button type="button" class="btn" onclick="addNewLocal()" style="margin-top: 4px;">Agregar</button>
+                                <button type="button" class="btn" onclick="hideAddLocalInput()" style="margin-top: 4px; background: var(--muted);">Cancelar</button>
+                            </div>
 
                         </div>
                         <div>
@@ -247,6 +260,47 @@
                 }
             };
             input.click();
+        }
+
+        // Mostrar input para agregar nuevo local
+        function showAddLocalInput() {
+            document.getElementById('addLocalInput').style.display = 'block';
+        }
+
+        // Ocultar input para agregar nuevo local
+        function hideAddLocalInput() {
+            document.getElementById('addLocalInput').style.display = 'none';
+            document.getElementById('newLocalName').value = '';
+        }
+
+        // Agregar nuevo local
+        async function addNewLocal() {
+            const newLocalName = document.getElementById('newLocalName').value.trim();
+            if (!newLocalName) {
+                alert("Por favor ingrese el nombre del local");
+                return;
+            }
+
+            const token = document.cookie.split('; ').find(row => row.startsWith('jwt_token='));
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token.split('=')[1]}`;
+                headers['Content-Type'] = 'application/json';
+            }
+
+            const response = await fetch("/api/locales", {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify({ nombre_local: newLocalName })
+            });
+
+            if (response.ok) {
+                alert("Local agregado correctamente");
+                hideAddLocalInput();
+                loadLocales();
+            } else {
+                alert("Error al agregar local");
+            }
         }
 
     </script>
