@@ -24,7 +24,9 @@ const allowedOrigins = [
     'http://localhost:5174',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
-    'http://192.168.100.8:5173'
+    'http://192.168.100.8:5173',
+    'http://192.168.100.8:4173',
+    'https://qrapptest.onrender.com'
 ].filter(Boolean);
 // Middleware - Optimized for performance
 app.use((0, compression_1.default)()); // Compress all responses
